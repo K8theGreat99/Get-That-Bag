@@ -99,6 +99,10 @@ The name does **not** change with each session, branch, or context window.
 A new session does not reset or advance the name by itself. If the last session
 ended at `Arepa 3` and today's session fixes a bug, today is `Arepa 4`.
 
+When bumping the name, update `VERSION_NAME` in `js/version.js` in the same
+commit. The app shows it in Settings → About, and the check the user performs
+is comparing that to the Linear title — which only works if they match.
+
 Judgment applies here too. When making many small changes in quick succession,
 or while a project is still being set up, do not bump for every one.
 Incrementing by 0.1 for each successive edit to CLAUDE.md adds noise without

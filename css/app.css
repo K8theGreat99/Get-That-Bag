@@ -288,6 +288,23 @@ main { padding: 16px; }
 .billrow .meta span { display: block; font-size: 11px; color: var(--muted); letter-spacing: .04em; }
 .billrow .amt { font-family: var(--display); font-size: 19px; font-weight: 600; }
 
+.version {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+}
+.version span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .04em;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 .empty { text-align: center; color: var(--muted); padding: 26px 10px; font-size: 14px; }
 .empty b {
   display: block;

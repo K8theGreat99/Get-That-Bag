@@ -24,10 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Give the service worker a per-deploy cache name so returning visitors
-      # are offered the new version instead of sitting on stale code.
-      - name: Stamp the build into the service worker
-        run: sed -i "s/__BUILD__/${GITHUB_SHA::12}/" sw.js
+      # The service worker gets a per-deploy cache name so returning visitors
+      # are offered the new version instead of sitting on stale code, and the
+      # app displays the same SHA in Settings so the running build is visible.
+      - name: Stamp the build
+        run: sed -i "s/__BUILD__/${GITHUB_SHA::7}/" sw.js js/version.js
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

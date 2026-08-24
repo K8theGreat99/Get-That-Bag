@@ -10,6 +10,7 @@ import {
 } from "./model.js";
 import { barsSVG, ringSVG } from "./charts.js";
 import { esc } from "./util.js";
+import { VERSION_NAME, BUILD } from "./version.js";
 
 /* ------------------------------------------------------------------ */
 /* flow — the home screen                                              */
@@ -223,8 +224,13 @@ export function renderSettings(ctx) {
 
     <section class="panel">
       <h2>About</h2>
-      <p class="sub">Get That Bag runs entirely in your browser. Nothing is uploaded, there is no account,
-        and no server ever sees these numbers. Add it to your home screen and it works offline.</p>
+      <p class="version">${esc(VERSION_NAME)}<span>build ${esc(BUILD)}</span></p>
+      <p class="sub">Check the version against the one you're expecting. If the build doesn't match what was
+        just deployed, you're seeing a cached copy — close the app fully and reopen it, or take the Reload
+        banner when it appears.</p>
+      <p class="sub" style="margin-bottom:0">Get That Bag runs entirely in your browser. Nothing is uploaded,
+        there is no account, and no server ever sees these numbers. Add it to your home screen and it works
+        offline.</p>
     </section>`;
 }
 

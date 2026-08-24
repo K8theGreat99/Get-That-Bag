@@ -29,6 +29,7 @@ const SHELL = [
   "js/sheets.js",
   "js/charts.js",
   "js/util.js",
+  "js/version.js",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/apple-touch-icon.png",
