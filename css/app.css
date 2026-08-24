@@ -13,6 +13,9 @@
   --muted: #67707E;
   --ahead: #2E9E5B;
   --behind: #C8483D;
+  --label: #4A5361;
+  --accent: #2F6FDC;
+  --on-accent: #FFFFFF;
   --shadow: 0 8px 26px rgba(20, 25, 35, .14);
 
   --display: "Barlow Condensed", "Arial Narrow", sans-serif;
@@ -30,6 +33,8 @@
     --muted: #8A94A3;
     --ahead: #6FD08C;
     --behind: #E2685E;
+    --label: #B2BBC8;
+    --accent: #4F8DF7;
     --shadow: 0 8px 26px rgba(0, 0, 0, .5);
   }
 }
@@ -43,6 +48,8 @@
   --muted: #8A94A3;
   --ahead: #6FD08C;
   --behind: #E2685E;
+  --label: #B2BBC8;
+  --accent: #4F8DF7;
   --shadow: 0 8px 26px rgba(0, 0, 0, .5);
 }
 
@@ -169,10 +176,10 @@ main { padding: 16px; }
 
 .panel h2 {
   font-family: var(--body);
-  font-size: 11px;
-  letter-spacing: .16em;
+  font-size: 12px;
+  letter-spacing: .13em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--label);
   font-weight: 600;
   margin-bottom: 2px;
 }
@@ -185,10 +192,10 @@ main { padding: 16px; }
 .stats .stat { flex: 1; min-width: 0; }
 .stats .k {
   display: block;
-  font-size: 10px;
-  letter-spacing: .14em;
+  font-size: 11px;
+  letter-spacing: .11em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--label);
   font-weight: 600;
 }
 .stats .v { font-family: var(--display); font-size: 26px; font-weight: 700; }
@@ -238,12 +245,17 @@ main { padding: 16px; }
   border: 1px solid var(--rule);
   border-radius: 999px;
   padding: 5px 12px;
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: 12px;
+  letter-spacing: .09em;
   text-transform: uppercase;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--label);
 }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
 
 .entry, .billrow {
   display: flex;
@@ -322,10 +334,10 @@ main { padding: 16px; }
 
 label {
   display: block;
-  font-size: 11px;
-  letter-spacing: .13em;
+  font-size: 12px;
+  letter-spacing: .11em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--label);
   margin: 14px 0 5px;
   font-weight: 600;
 }
@@ -375,25 +387,33 @@ input[type="file"] { padding: 9px; font-size: 13px; }
 .btn.save { margin-top: 20px; }
 
 .seg-row { display: flex; gap: 6px; }
-.seg-row .seg {
+.seg-row .segbtn {
   flex: 1;
   background: var(--panel-2);
   border: 1px solid var(--rule);
   border-radius: 9px;
-  padding: 9px 4px;
-  font-size: 11px;
-  letter-spacing: .1em;
+  padding: 10px 4px;
+  font-size: 12px;
+  letter-spacing: .09em;
   text-transform: uppercase;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--label);
 }
-.seg-row .seg[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+/* Accent rather than an ink/panel swap: the selected state has to be obvious
+   in both themes, and "system" selected while the system is dark otherwise
+   looks identical to unselected. */
+.seg-row .segbtn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
 
 .fold { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 10px; }
 .fold summary {
-  font-size: 11px;
-  letter-spacing: .12em;
+  font-size: 12px;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--label);
   font-weight: 600;
   cursor: pointer;
 }
@@ -479,12 +499,17 @@ input[type="file"] { padding: 9px; font-size: 13px; }
   border: 1px solid var(--rule);
   border-radius: 9px;
   padding: 10px 4px;
-  font-size: 11px;
-  letter-spacing: .1em;
+  font-size: 12px;
+  letter-spacing: .09em;
   text-transform: uppercase;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--label);
 }
-.segs button[aria-selected="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.segs button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
 
 .detailhead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
 .detailhead h3 { font-family: var(--display); font-size: 25px; font-weight: 600; letter-spacing: .03em; }
