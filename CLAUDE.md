@@ -71,23 +71,21 @@ loses the write: `pagehide` flushes the in-memory state over it.
 
 ## Network limits in the remote session
 
-The egress proxy blocks both `api.github.com` and `k8thegreat99.github.io`, so
-`curl` and WebFetch cannot reach GitHub or the deployed site. A `curl` poll
-against the API returns empty output indefinitely rather than failing, which
-looks like a hang.
+The egress proxy blocks `k8thegreat99.github.io`, so the deployed site cannot
+be fetched from the session. Verify a deploy by checking the workflow run with
+the `mcp__github__*` tools, then report the expected version name and build SHA
+and let the user confirm in Settings → About on their device.
 
-Use the `mcp__github__*` tools for anything on GitHub, including checking
-whether a deploy succeeded. The live site cannot be verified from here at all —
-report the expected version name and build SHA and let the user check Settings
-→ About on their device.
+`api.github.com` is reachable, but unauthenticated requests share an egress IP
+whose rate limit is usually already exhausted — they return a rate-limit JSON
+body rather than an error, so a `curl` poll looks like it is hanging when it is
+really being refused. Use the `mcp__github__*` tools, which are authenticated.
 
-## Session tracking in Linear
+Reachable and safe to use: `registry.npmjs.org`, `fonts.googleapis.com`,
+`fonts.gstatic.com`, `raw.githubusercontent.com`, `github.com`, `pypi.org`.
 
-Work in this repo is recorded as Linear issues. The rules are in the
-`session-tracking` skill (`.claude/skills/session-tracking/SKILL.md`) — follow
-that. It is adapted for this project from the Linear document "Session
-Tracking in Linear", which is written for Android projects and refers to build
-numbers that do not exist here.
-
-Do not infer conventions from issues in other Linear projects. Much of that
-data is experimental and does not reflect current rules.
+Git push credentials have gone away mid-session before, with
+`could not read Username for 'https://github.com'` and no credential helper
+configured. Reads still work. When that happens, push with
+`mcp__github__push_files` (one file per call) and then diff the result against
+the local copy via `raw.githubusercontent.com` before trusting it.
