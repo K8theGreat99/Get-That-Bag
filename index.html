@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flow — earnings against what's due</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#1B1E24;
+    --panel:#232830;
+    --panel-2:#2B313B;
+    --rule:#39414E;
+    --ink:#E7E9EC;
+    --muted:#8A94A3;
+    --ahead:#6FD08C;
+    --behind:#E2685E;
+    --display:"Barlow Condensed", "Arial Narrow", sans-serif;
+    --body:"IBM Plex Sans", system-ui, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ground); color:var(--ink); font-family:var(--body);
+    font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+    padding-bottom:96px;
+  }
+  button{font-family:inherit; color:inherit; cursor:pointer}
+  input,select{font-family:inherit; font-size:16px}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:20; background:var(--ground);
+    border-bottom:1px solid var(--rule); padding:14px 16px 10px;
+  }
+  .brandrow{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+  .brand{font-family:var(--display); font-weight:700; font-size:24px; letter-spacing:.06em; text-transform:uppercase}
+  .status{font-family:var(--display); font-size:22px; font-weight:600; letter-spacing:.02em}
+  .status small{display:block; font-family:var(--body); font-size:10px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted); font-weight:500; text-align:right; line-height:1.4}
+  .ahead{color:var(--ahead)} .behind{color:var(--behind)}
+
+  .stepper{display:flex; align-items:center; gap:10px; margin-top:10px}
+  .stepper button{
+    background:var(--panel); border:1px solid var(--rule); border-radius:8px;
+    width:34px; height:32px; font-size:15px; display:grid; place-items:center;
+  }
+  .stepper button:disabled{opacity:.3; cursor:default}
+  .monthlabel{
+    font-family:var(--display); font-size:21px; font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; flex:1; text-align:center;
+  }
+  .monthlabel .yr{color:var(--muted); margin-left:6px}
+  .today-btn{
+    background:none; border:1px solid var(--rule); border-radius:999px;
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; color:var(--muted);
+  }
+
+  /* ---------- tabs ---------- */
+  nav.tabs{display:flex; gap:4px; padding:10px 16px 0}
+  nav.tabs button{
+    background:none; border:none; border-bottom:2px solid transparent; padding:6px 2px; margin-right:16px;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:500;
+  }
+  nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--ink)}
+
+  main{padding:16px}
+  .panel{background:var(--panel); border:1px solid var(--rule); border-radius:14px; padding:16px; margin-bottom:14px}
+  .panel h2{
+    margin:0 0 2px; font-family:var(--body); font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+  }
+  .panel .sub{color:var(--muted); font-size:12px; margin-bottom:12px}
+
+  /* ---------- charts ---------- */
+  .ringwrap{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+  .ringwrap svg{flex:0 0 168px}
+  .legend{flex:1; min-width:150px; display:flex; flex-direction:column; gap:7px}
+  .legend .row{display:flex; align-items:center; gap:8px; font-size:13px}
+  .legend .sw{width:11px; height:11px; border-radius:3px; flex:0 0 auto}
+  .legend .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .legend .amt{font-family:var(--mono); font-size:12px; color:var(--muted)}
+
+  .barscroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -4px; padding:0 4px}
+  .hint{font-size:11px; color:var(--muted); margin-top:10px; letter-spacing:.03em}
+
+  /* ---------- ledger ---------- */
+  .chips{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap}
+  .chip{background:var(--panel-2); border:1px solid var(--rule); border-radius:999px; padding:5px 12px;
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .chip[aria-pressed="true"]{background:var(--ink); color:var(--ground); border-color:var(--ink)}
+  .entry{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--rule)}
+  .entry:last-child{border-bottom:none}
+  .entry .date{font-family:var(--mono); font-size:11px; color:var(--muted); width:44px; flex:0 0 auto}
+  .entry .who{flex:1; min-width:0}
+  .entry .who b{display:block; font-weight:500; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .entry .who span{font-size:11px; color:var(--muted); letter-spacing:.04em}
+  .entry .val{font-family:var(--display); font-size:19px; font-weight:600}
+  .daygroup{font-family:var(--display); font-size:15px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); margin:18px 0 2px; padding-top:12px; border-top:1px solid var(--rule)}
+  .daygroup:first-child{margin-top:0; padding-top:0; border-top:none}
+
+  /* ---------- bills list ---------- */
+  .billrow{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--rule)}
+  .billrow:last-child{border-bottom:none}
+  .billrow .sw{width:4px; align-self:stretch; border-radius:2px; flex:0 0 auto}
+  .billrow .meta{flex:1; min-width:0}
+  .billrow .meta b{font-weight:500; font-size:14px}
+  .billrow .meta span{display:block; font-size:11px; color:var(--muted); letter-spacing:.04em}
+  .billrow .amt{font-family:var(--display); font-size:19px; font-weight:600}
+
+  .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:14px}
+  .empty b{display:block; color:var(--ink); font-family:var(--display); font-size:20px;
+    letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px}
+
+  /* ---------- add button + sheet ---------- */
+  .fab{
+    position:fixed; right:18px; bottom:22px; z-index:30;
+    background:var(--ink); color:var(--ground); border:none; border-radius:999px;
+    height:54px; padding:0 22px; font-family:var(--display); font-weight:700;
+    font-size:17px; letter-spacing:.1em; text-transform:uppercase;
+    box-shadow:0 8px 26px rgba(0,0,0,.5);
+  }
+  .scrim{position:fixed; inset:0; background:rgba(10,12,15,.66); z-index:40; display:none}
+  .scrim.open{display:block}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--panel);
+    border-top:1px solid var(--rule); border-radius:18px 18px 0 0; padding:16px 16px 26px;
+    max-height:88vh; overflow-y:auto; transform:translateY(102%); transition:transform .22s ease;
+  }
+  .sheet.open{transform:translateY(0)}
+  @media (prefers-reduced-motion:reduce){ .sheet{transition:none} }
+  .grab{width:38px; height:4px; border-radius:2px; background:var(--rule); margin:0 auto 14px}
+  .segs{display:flex; gap:6px; margin-bottom:16px}
+  .segs button{flex:1; background:var(--panel-2); border:1px solid var(--rule); border-radius:9px;
+    padding:9px 4px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .segs button[aria-selected="true"]{background:var(--ink); color:var(--ground); border-color:var(--ink)}
+  label{display:block; font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted); margin:12px 0 5px; font-weight:600}
+  input,select{
+    width:100%; background:var(--panel-2); border:1px solid var(--rule); border-radius:9px;
+    padding:11px 12px; color:var(--ink);
+  }
+  textarea{
+    width:100%; background:var(--panel-2); border:1px solid var(--rule); border-radius:9px;
+    padding:11px 12px; color:var(--ink); font-family:var(--mono); font-size:12px;
+    resize:vertical; margin-top:4px;
+  }
+  textarea:focus{outline:2px solid var(--ahead); outline-offset:2px}
+  .trials{margin-top:12px; border-top:1px solid var(--rule); padding-top:10px}
+  .trial{display:flex; gap:8px; font-family:var(--mono); font-size:11px; padding:3px 0; align-items:baseline}
+  .trial .tl{flex:0 0 auto; color:var(--ink)}
+  .trial .tn{flex:1; color:var(--muted); word-break:break-word}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--ahead); outline-offset:2px}
+  .two{display:flex; gap:10px} .two>div{flex:1}
+  .save{
+    width:100%; margin-top:20px; background:var(--ink); color:var(--ground); border:none; border-radius:11px;
+    padding:14px; font-family:var(--display); font-size:18px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  }
+  .ghostbtn{
+    width:100%; margin-top:9px; background:none; border:1px solid var(--rule); border-radius:11px;
+    padding:12px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+  }
+  .swatches{display:flex; gap:7px; flex-wrap:wrap; margin-top:6px}
+  .swatches button{width:28px; height:28px; border-radius:7px; border:2px solid transparent}
+  .swatches button[aria-pressed="true"]{border-color:var(--ink)}
+  .detailhead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:2px}
+  .detailhead h3{margin:0; font-family:var(--display); font-size:25px; font-weight:600; letter-spacing:.03em}
+  .detailhead .n{font-family:var(--display); font-size:25px; font-weight:600}
+  .detailmeta{font-size:12px; color:var(--muted); letter-spacing:.04em; margin-bottom:14px}
+  .toggle{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:11px; padding:12px; margin-top:14px}
+  .toggle b{font-weight:500; font-size:14px}
+  .toggle span{display:block; font-size:11px; color:var(--muted)}
+  .switch{width:48px; height:28px; border-radius:999px; background:var(--rule); border:none; position:relative; flex:0 0 auto}
+  .switch i{position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:var(--ink); transition:left .16s ease}
+  .switch[aria-pressed="true"]{background:var(--ahead)}
+  .switch[aria-pressed="true"] i{left:23px; background:var(--ground)}
+  .toastbar{position:fixed; left:16px; right:16px; bottom:88px; z-index:60; background:var(--panel-2);
+    border:1px solid var(--rule); border-radius:11px; padding:12px 14px; font-size:13px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease}
+  .toastbar.show{opacity:1}
+
+  @media (min-width:760px){
+    body{max-width:1040px; margin:0 auto}
+    .split{display:flex; gap:14px; align-items:flex-start}
+    .split .weeks{flex:1.6} .split .month{flex:1; position:sticky; top:150px}
+    .ringwrap{flex-direction:column; align-items:stretch}
+    .ringwrap svg{align-self:center}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brandrow">
+    <div class="brand">Flow</div>
+    <div class="status" id="status"></div>
+  </div>
+  <div class="stepper">
+    <button id="prevM" aria-label="Previous month">‹</button>
+    <div class="monthlabel" id="monthLabel"></div>
+    <button id="nextM" aria-label="Next month">›</button>
+    <button class="today-btn" id="todayBtn" hidden>Now</button>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-view="charts" aria-selected="true">Charts</button>
+    <button role="tab" data-view="ledger" aria-selected="false">Ledger</button>
+    <button role="tab" data-view="bills" aria-selected="false">Bills</button>
+    <button role="tab" data-view="data" aria-selected="false">Data</button>
+  </nav>
+</header>
+
+<main id="main"></main>
+
+<button class="fab" id="fab">+ Add</button>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="toastbar" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================ storage ============================ */
+/* This view's window.storage accepts the call but its backend response is
+   unusable, so the file carries your history instead. Claude writes it into
+   the SEED line below; anything entered after that lives in the session until
+   you copy it out from the Data tab. */
+const SEED = null; /* CLAUDE-SEED */
+let DIRTY = 0;
+
+/* The host's storage API rejected our first call shape, so instead of guessing
+   we try every plausible key style and payload shape and adopt whichever works. */
+let S = { earnings:[], spends:[], bills:[], inst:{}, colors:{}, cats:["Groceries","Gas","Bills","Car","Home","Personal"] };
+let saveTimer = null;
+let STORE = { ok:false, why:"not checked yet", lastSave:null, using:"", trials:[] };
+
+const KEYSETS = [
+  { id:"colon",  probe:"flow:probe", data:"flow:data" },
+  { id:"plain",  probe:"flowprobe",  data:"flowdata" },
+  { id:"hyphen", probe:"flow-probe", data:"flow-tracker-v1" }
+];
+const SHAPES = [
+  { id:"text + shared arg",  pack:s=>s,        withShared:true  },
+  { id:"text only",          pack:s=>s,        withShared:false },
+  { id:"object + shared arg",pack:s=>({d:s}),  withShared:true  },
+  { id:"object only",        pack:s=>({d:s}),  withShared:false }
+];
+const put  = (sh,k,str)=> sh.withShared ? window.storage.set(k, sh.pack(str), false)
+                                        : window.storage.set(k, sh.pack(str));
+const take = (sh,k)=> sh.withShared ? window.storage.get(k, false) : window.storage.get(k);
+function unpack(r){
+  if(!r) return null;
+  let v = (r && r.value !== undefined) ? r.value : r;
+  if(v && typeof v === "object") v = v.d;
+  return typeof v === "string" ? v : null;
+}
+
+let ADAPTER = null;
+async function probe(){
+  STORE.trials = []; ADAPTER = null;
+  if(!window.storage){
+    STORE.ok = false; STORE.why = "This view provides no window.storage at all.";
+    return;
+  }
+  for(const ks of KEYSETS){
+    for(const sh of SHAPES){
+      const label = `${ks.id} key · ${sh.id}`;
+      try{
+        await put(sh, ks.probe, "ok");
+        const back = unpack(await take(sh, ks.probe));
+        if(back === "ok"){
+          STORE.trials.push({ label, ok:true, note:"works" });
+          ADAPTER = { ks, sh };
+          STORE.ok = true; STORE.using = label;
+          STORE.why = "Saving to your Claude account.";
+          return;
+        }
+        STORE.trials.push({ label, ok:false, note:"wrote it, read back " + JSON.stringify(back) });
+      }catch(e){
+        STORE.trials.push({ label, ok:false, note:String((e && e.message) || e) });
+      }
+    }
+  }
+  STORE.ok = false;
+  STORE.why = "Every way of calling window.storage was rejected.";
+}
+async function load(){
+  if(!ADAPTER) return;
+  try{
+    const raw = unpack(await take(ADAPTER.sh, ADAPTER.ks.data));
+    if(raw) S = Object.assign(S, JSON.parse(raw));
+  }catch(e){ /* nothing saved yet — normal on a first run */ }
+}
+async function saveNow(){
+  if(!ADAPTER) return false;
+  try{
+    await put(ADAPTER.sh, ADAPTER.ks.data, JSON.stringify(S));
+    STORE.lastSave = new Date();
+    return true;
+  }catch(e){
+    STORE.ok = false;
+    STORE.why = "Saving stopped working: " + String((e && e.message) || e);
+    render();
+    return false;
+  }
+}
+function save(){
+  if(!STORE.ok) DIRTY++;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 250);
+}
+
+/* ============================ dates ============================ */
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONFULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const todayStr = () => ymd(new Date());
+function mondayOf(dateStr){
+  const d = parse(dateStr); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd); return ymd(d);
+}
+function addDays(s,n){ const d=parse(s); d.setDate(d.getDate()+n); return ymd(d); }
+function addMonthsClamped(s,n){
+  const d = parse(s); const day = d.getDate();
+  const t = new Date(d.getFullYear(), d.getMonth()+n, 1);
+  const last = new Date(t.getFullYear(), t.getMonth()+1, 0).getDate();
+  t.setDate(Math.min(day,last)); return ymd(t);
+}
+const monthKey = s => s.slice(0,7);
+const money = n => "$" + Math.round(Math.abs(n)).toLocaleString();
+const money2 = n => "$" + Math.abs(n).toFixed(2).replace(/\.00$/,"");
+
+/* ============================ colors ============================ */
+const PALETTE = ["#4F8DF7","#F2A93B","#8B5CF6","#2DBE9C","#E2685E","#E86FB0","#5AC8E8",
+                 "#B8CE45","#C2743D","#7C89F5","#4FB477","#D95F8B","#9AA5B1","#E8C24A"];
+function colorFor(kind,name){
+  const k = kind+":"+name.trim().toLowerCase();
+  if(!S.colors[k]){
+    const used = Object.values(S.colors);
+    S.colors[k] = PALETTE.find(c=>!used.includes(c)) || PALETTE[Object.keys(S.colors).length % PALETTE.length];
+  }
+  return S.colors[k];
+}
+function setColor(kind,name,hex){ S.colors[kind+":"+name.trim().toLowerCase()] = hex; save(); }
+
+/* ============================ obligations ============================ */
+/* A bill series generates occurrences from its anchor date forward.
+   Any occurrence that has been edited, paid, skipped, or has already come
+   due is frozen into S.inst so later estimate changes never rewrite history. */
+const HORIZON_MONTHS = 3;
+function horizonEnd(){
+  const t = new Date(); const e = new Date(t.getFullYear(), t.getMonth()+HORIZON_MONTHS+1, 0);
+  return ymd(e);
+}
+function occurrences(bill, end){
+  const out = []; let d = bill.anchor; let guard = 0;
+  if(!bill.every){ return d <= end ? [d] : []; }
+  while(d <= end && guard++ < 400){ out.push(d); d = addMonthsClamped(bill.anchor, bill.every*guard); }
+  return out;
+}
+function lockPast(){
+  const t = todayStr(); let changed = false;
+  S.bills.forEach(b=>{
+    occurrences(b, t).forEach(date=>{
+      const k = b.id+"|"+date;
+      if(!S.inst[k]){ S.inst[k] = { amount:b.amount, paid:false }; changed = true; }
+    });
+  });
+  if(changed) save();
+}
+function allObligations(){
+  const end = horizonEnd(); const out = [];
+  S.bills.forEach(b=>{
+    occurrences(b, end).forEach(date=>{
+      const k = b.id+"|"+date, ov = S.inst[k];
+      if(ov && ov.skipped) return;
+      out.push({ kind:"bill", key:k, billId:b.id, date, name:b.name, cat:b.cat,
+                 amount: ov ? ov.amount : b.amount, paid: ov ? !!ov.paid : false,
+                 projected: !ov, seq: b.seq||0 });
+    });
+  });
+  S.spends.forEach(s=>{
+    out.push({ kind:"spend", key:s.id, date:s.date, name:s.name, cat:s.cat,
+               amount:s.amount, paid:true, projected:false, seq:s.seq||0 });
+  });
+  out.sort((a,b)=> a.date<b.date?-1 : a.date>b.date?1 : (a.seq-b.seq));
+  return out.filter(o=>o.amount>0);
+}
+/* Earnings are one pot, poured into obligations in date order.
+   Surplus spills into the next bar; a new expense pulls the line back. */
+function allocate(obs){
+  const pot = S.earnings.reduce((a,e)=>a+e.amount,0);
+  let run = 0;
+  obs.forEach(o=>{ o.filled = Math.max(0, Math.min(o.amount, pot - run)); run += o.amount; });
+  return { pot, owed: run, spill: Math.max(0, pot - run) };
+}
+
+/* ============================ view state ============================ */
+let VIEW = "charts";
+let CURSOR = todayStr().slice(0,7);
+let LEDGER_FILTER = "all";
+
+function monthsWithData(){
+  const set = new Set([todayStr().slice(0,7), CURSOR]);
+  S.earnings.forEach(e=>set.add(monthKey(e.date)));
+  allObligations().forEach(o=>set.add(monthKey(o.date)));
+  return [...set].sort();
+}
+function shiftMonth(mk,n){
+  const [y,m] = mk.split("-").map(Number);
+  const d = new Date(y, m-1+n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+/* A week belongs to the month its Monday falls in. */
+function weeksOfMonth(mk){
+  const [y,m] = mk.split("-").map(Number);
+  const out = []; let d = new Date(y, m-1, 1);
+  d = parse(mondayOf(ymd(d)));
+  if(d.getMonth() !== m-1 || d.getFullYear() !== y) d.setDate(d.getDate()+7);
+  while(d.getMonth() === m-1 && d.getFullYear() === y){ out.push(ymd(d)); d.setDate(d.getDate()+7); }
+  return out;
+}
+
+/* ============================ render ============================ */
+function render(){
+  const obs = allObligations();
+  const totals = allocate(obs);
+
+  // header
+  const inMonth = obs.filter(o=>monthKey(o.date)===CURSOR);
+  const mTotal = inMonth.reduce((a,o)=>a+o.amount,0);
+  const mFilled = inMonth.reduce((a,o)=>a+o.filled,0);
+  const gap = mFilled - mTotal;
+  const st = document.getElementById("status");
+  st.className = "status " + (gap>=0 ? "ahead":"behind");
+  st.innerHTML = mTotal===0
+    ? `<small>nothing due</small>—`
+    : `${money(gap)}<small>${gap>=0?"ahead":"still short"}</small>`;
+
+  const [yy,mm] = CURSOR.split("-");
+  document.getElementById("monthLabel").innerHTML =
+    `${MONFULL[+mm-1]}<span class="yr">${yy.slice(2)}</span>`;
+  const ms = monthsWithData();
+  document.getElementById("prevM").disabled = CURSOR <= ms[0];
+  document.getElementById("nextM").disabled = CURSOR >= shiftMonth(todayStr().slice(0,7), HORIZON_MONTHS);
+  document.getElementById("todayBtn").hidden = CURSOR === todayStr().slice(0,7);
+
+  document.querySelectorAll("nav.tabs button").forEach(b=>
+    b.setAttribute("aria-selected", b.dataset.view===VIEW));
+
+  const main = document.getElementById("main");
+  const banner = STORE.ok ? "" : `<div class="panel" style="border-color:${DIRTY?'#E2685E':'var(--rule)'}">
+    <h2 style="color:${DIRTY?'#E2685E':'var(--muted)'}">${DIRTY
+      ? `${DIRTY} ${DIRTY===1?"change":"changes"} not backed up`
+      : "Backed up through the last update"}</h2>
+    <div class="sub" style="margin-bottom:10px">This view can't save on its own. When you're done entering,
+      copy your data from the Data tab and paste it to Claude — it gets baked into the next copy of the file.</div>
+    <button class="ghostbtn" style="margin:0" data-view-jump="data">Copy my data</button></div>`;
+  if(VIEW==="charts") main.innerHTML = banner + renderCharts(obs, inMonth, mTotal, mFilled, totals);
+  else if(VIEW==="ledger") main.innerHTML = banner + renderLedger(obs);
+  else if(VIEW==="data") main.innerHTML = renderData();
+  else main.innerHTML = banner + renderBills();
+}
+
+/* ---------- charts ---------- */
+function renderCharts(obs, inMonth, mTotal, mFilled, totals){
+  if(!obs.length && !S.earnings.length){
+    return `<div class="panel"><div class="empty"><b>Nothing tracked yet</b>
+      Add a bill you know is coming, then log what you earn today. The bars fill as the money lands.</div></div>`;
+  }
+  const weeks = weeksOfMonth(CURSOR);
+  return `<div class="split">
+    <div class="weeks"><div class="panel">
+      <h2>Weeks</h2><div class="sub">Each column is one week, Monday to Sunday. Tap a segment to edit or mark it paid.</div>
+      <div class="barscroll">${barsSVG(weeks, obs)}</div>
+      <div class="hint">Outline = not covered yet · Solid = earned · Hatched = actually paid</div>
+    </div></div>
+    <div class="month"><div class="panel">
+      <h2>${MONFULL[+CURSOR.split("-")[1]-1]} as a whole</h2>
+      <div class="sub">Sliced by category, filling clockwise as you earn.</div>
+      ${ringSVG(inMonth, mTotal, mFilled)}
+    </div></div>
+  </div>`;
+}
+
+function barsSVG(weeks, obs){
+  const W = Math.max(weeks.length*84, 300), H = 284, PAD_B = 56, PAD_T = 30;
+  const usable = H - PAD_B - PAD_T;
+  const groups = weeks.map(w0=>{
+    const w1 = addDays(w0,6);
+    const items = obs.filter(o=>o.date>=w0 && o.date<=w1);
+    return { w0, w1, items,
+      total: items.reduce((a,o)=>a+o.amount,0),
+      filled: items.reduce((a,o)=>a+o.filled,0) };
+  });
+  const max = Math.max(1, ...groups.map(g=>g.total));
+  const bw = 46, gapw = (W - weeks.length*bw) / (weeks.length+1);
+  const today = todayStr();
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Weekly expenses filling with earnings">
+    <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="none"/><line x1="0" y1="0" x2="0" y2="6" stroke="#1B1E24" stroke-opacity=".55" stroke-width="3"/>
+    </pattern></defs>`;
+
+  groups.forEach((g,i)=>{
+    const x = gapw + i*(bw+gapw);
+    const h = (g.total/max)*usable;
+    const yBase = H - PAD_B;
+    const isNow = today>=g.w0 && today<=g.w1;
+
+    if(g.total===0){
+      s += `<rect x="${x}" y="${yBase-16}" width="${bw}" height="16" rx="4" fill="none"
+             stroke="#39414E" stroke-dasharray="3 3"/>`;
+    } else {
+      let y = yBase;
+      g.items.forEach(o=>{
+        const sh = (o.amount/max)*usable;
+        const col = colorFor("n", o.name);
+        const fh = (o.filled/o.amount)*sh;
+        y -= sh;
+        s += `<g class="seg" data-key="${o.key}" style="cursor:pointer">
+          <rect x="${x}" y="${y}" width="${bw}" height="${Math.max(sh,1)}" fill="${col}" fill-opacity=".13"
+                stroke="${col}" stroke-width="1.5" rx="2"/>`;
+        if(fh>0.4){
+          s += `<rect x="${x}" y="${y+sh-fh}" width="${bw}" height="${fh}" fill="${col}" rx="2"/>`;
+          if(o.paid && o.kind==="bill")
+            s += `<rect x="${x}" y="${y+sh-fh}" width="${bw}" height="${fh}" fill="url(#hatch)" rx="2"/>`;
+        }
+        s += `<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(sh,1)}" fill="transparent"/></g>`;
+      });
+      const wl = yBase - (g.filled/max)*usable;
+      if(g.filled>0 && g.filled<g.total)
+        s += `<line x1="${x-4}" y1="${wl}" x2="${x+bw+4}" y2="${wl}" stroke="#E7E9EC" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      const pct = Math.round((g.filled/g.total)*100);
+      s += `<text x="${x+bw/2}" y="${yBase-h-10}" text-anchor="middle" font-family="Barlow Condensed,sans-serif"
+             font-size="17" font-weight="700" fill="${pct>=100?'#6FD08C':'#E7E9EC'}">${pct}%</text>`;
+    }
+    const a = parse(g.w0), z = parse(g.w1);
+    const sameM = a.getMonth()===z.getMonth();
+    const days = `${a.getDate()}–${z.getDate()}`;
+    const mLabel = sameM ? MON[a.getMonth()].toUpperCase()
+                         : `${MON[a.getMonth()].toUpperCase()}–${MON[z.getMonth()].toUpperCase()}`;
+    s += `<text x="${x+bw/2}" y="${yBase+18}" text-anchor="middle" font-family="Barlow Condensed,sans-serif"
+           font-size="17" font-weight="600" letter-spacing=".3" fill="${isNow?'#E7E9EC':'#8A94A3'}">
+           ${days}</text>
+          <text x="${x+bw/2}" y="${yBase+32}" text-anchor="middle" font-family="Barlow Condensed,sans-serif"
+           font-size="12" font-weight="500" letter-spacing="1.1" fill="#8A94A3">${mLabel}</text>
+          <text x="${x+bw/2}" y="${yBase+47}" text-anchor="middle" font-family="IBM Plex Mono,monospace"
+           font-size="10" fill="#8A94A3">${g.total?money(g.total):"clear"}</text>`;
+    if(isNow) s += `<rect x="${x-5}" y="${PAD_T-10}" width="${bw+10}" height="${H-PAD_B-PAD_T+16}" rx="7"
+                     fill="none" stroke="#39414E"/>`;
+  });
+  return s + `</svg>`;
+}
+
+function ringSVG(inMonth, total, filled){
+  const R=76, r=48, cx=84, cy=84;
+  if(total===0) return `<div class="empty">Nothing due this month yet.</div>`;
+  const byCat = {};
+  inMonth.forEach(o=>{ const c=o.cat||"Other"; byCat[c]=(byCat[c]||0)+o.amount; });
+  const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const pct = Math.min(100, Math.round((filled/total)*100));
+  const sweep = Math.min(1, filled/total) * Math.PI*2;
+
+  const arc=(a0,a1,ro,ri)=>{
+    const p=(a,rr)=>[cx+rr*Math.sin(a), cy-rr*Math.cos(a)];
+    const big = (a1-a0)>Math.PI?1:0;
+    const [x1,y1]=p(a0,ro),[x2,y2]=p(a1,ro),[x3,y3]=p(a1,ri),[x4,y4]=p(a0,ri);
+    return `M${x1},${y1} A${ro},${ro} 0 ${big} 1 ${x2},${y2} L${x3},${y3} A${ri},${ri} 0 ${big} 0 ${x4},${y4} Z`;
+  };
+
+  let a=0, faint="", solid="";
+  cats.forEach(([c,v])=>{
+    const a1 = a + (v/total)*Math.PI*2, col = colorFor("c", c);
+    const d = arc(a, Math.max(a1-0.012,a+0.001), R, r);
+    faint += `<path d="${d}" fill="${col}" fill-opacity=".16" stroke="${col}" stroke-width="1.2"/>`;
+    solid += `<path d="${d}" fill="${col}"/>`;
+    a = a1;
+  });
+  const clip = sweep >= Math.PI*2 - 0.001
+    ? `<circle cx="${cx}" cy="${cy}" r="${R}"/>`
+    : `<path d="${arc(0, Math.max(sweep,0.0001), R+2, 0)}"/>`;
+
+  let legend = cats.map(([c,v])=>`<div class="row">
+      <span class="sw" style="background:${colorFor("c",c)}"></span>
+      <span class="nm">${esc(c)}</span><span class="amt">${money(v)}</span></div>`).join("");
+  legend += `<div class="row" style="margin-top:4px;border-top:1px solid var(--rule);padding-top:8px">
+      <span class="nm" style="color:var(--muted);font-size:12px;letter-spacing:.1em;text-transform:uppercase">Earned toward it</span>
+      <span class="amt" style="color:${filled>=total?'#6FD08C':'#E7E9EC'}">${money(filled)}</span></div>`;
+
+  return `<div class="ringwrap">
+    <svg viewBox="0 0 168 168" width="168" height="168" role="img"
+      aria-label="${pct} percent of this month's expenses covered">
+      <defs><clipPath id="sweep">${clip}</clipPath></defs>
+      ${faint}<g clip-path="url(#sweep)">${solid}</g>
+      <text x="${cx}" y="${cy+2}" text-anchor="middle" font-family="Barlow Condensed,sans-serif"
+        font-size="38" font-weight="700" fill="${pct>=100?'#6FD08C':'#E7E9EC'}">${pct}%</text>
+      <text x="${cx}" y="${cy+20}" text-anchor="middle" font-family="IBM Plex Mono,monospace"
+        font-size="10" fill="#8A94A3">${money(filled)} / ${money(total)}</text>
+    </svg>
+    <div class="legend">${legend}</div>
+  </div>`;
+}
+
+/* ---------- ledger ---------- */
+function renderLedger(obs){
+  const rows = [];
+  if(LEDGER_FILTER==="all"||LEDGER_FILTER==="in")
+    S.earnings.forEach(e=>rows.push({date:e.date, t:"in", id:e.id, name:e.source||"Earnings",
+      sub:e.note||"", amount:e.amount}));
+  obs.forEach(o=>{
+    if(o.kind==="spend" && (LEDGER_FILTER==="all"||LEDGER_FILTER==="out"))
+      rows.push({date:o.date, t:"out", id:o.key, name:o.name, sub:o.cat||"", amount:-o.amount});
+    if(o.kind==="bill" && (LEDGER_FILTER==="all"||LEDGER_FILTER==="bill"))
+      rows.push({date:o.date, t:"bill", key:o.key, name:o.name,
+        sub:[o.cat, o.paid?"paid":(o.projected?"projected":"due")].filter(Boolean).join(" · "),
+        amount:-o.amount});
+  });
+  rows.sort((a,b)=> a.date<b.date?1:a.date>b.date?-1:0);
+
+  const chips = [["all","Everything"],["in","Earned"],["out","Spent"],["bill","Bills"]]
+    .map(([k,l])=>`<button class="chip" data-filter="${k}" aria-pressed="${LEDGER_FILTER===k}">${l}</button>`).join("");
+
+  if(!rows.length) return `<div class="panel"><div class="chips">${chips}</div>
+    <div class="empty"><b>Empty</b>Entries you add show up here, newest first.</div></div>`;
+
+  let out = "", last = "";
+  rows.forEach(r=>{
+    if(r.date!==last){
+      const d=parse(r.date);
+      out += `<div class="daygroup">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]} · ${MON[d.getMonth()]} ${d.getDate()}</div>`;
+      last = r.date;
+    }
+    const col = r.t==="in" ? "#6FD08C" : "#E7E9EC";
+    out += `<div class="entry" ${r.t==="bill"?`data-billkey="${r.key}"`:`data-del="${r.t}:${r.id}"`} style="cursor:pointer">
+      <span class="sw" style="width:4px;height:26px;border-radius:2px;background:${
+        r.t==="in" ? "#6FD08C" : colorFor("n", r.name)}"></span>
+      <span class="who"><b>${esc(r.name)}</b><span>${esc(r.sub)}</span></span>
+      <span class="val" style="color:${col}">${r.amount>0?"+":"−"}${money2(r.amount)}</span></div>`;
+  });
+  return `<div class="panel"><div class="chips">${chips}</div>${out}</div>`;
+}
+
+/* ---------- data ---------- */
+function renderData(){
+  const counts = `${S.earnings.length} earnings · ${S.spends.length} purchases · ${S.bills.length} bills`;
+  const last = STORE.lastSave
+    ? `Last saved ${STORE.lastSave.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}.`
+    : "";
+  return `<div class="panel">
+    <h2>Copy your data out</h2>
+    <div class="sub">Tap Copy, then paste it into the chat. Claude bakes it into the next copy of the file,
+      so it opens with your history already in it.${DIRTY ? ` You have ${DIRTY} ${DIRTY===1?"change":"changes"} since the file was built.` : ""}</div>
+    <textarea id="exp" readonly rows="5">${esc(JSON.stringify(S))}</textarea>
+    <button class="save" id="copyBtn">Copy</button>
+  </div>
+  <div class="panel">
+    <h2>Paste data back in</h2>
+    <div class="sub">Replaces what's here now with the backup you paste.</div>
+    <textarea id="imp" rows="5" placeholder="Paste your backup here"></textarea>
+    <button class="ghostbtn" id="loadBtn" style="margin-top:9px">Load it</button>
+  </div>
+  <div class="panel">
+    <h2>Storage</h2>
+    <div class="sub" style="color:${STORE.ok?'var(--ahead)':'var(--muted)'}">${esc(STORE.why)} ${esc(last)}</div>
+    <div class="sub" style="margin-bottom:0">Holding ${counts}.</div>
+    ${STORE.trials.length ? `<div class="trials">${STORE.trials.map(t=>
+      `<div class="trial"><span style="color:${t.ok?'var(--ahead)':'var(--behind)'}">${t.ok?"✓":"✗"}</span>
+       <span class="tl">${esc(t.label)}</span><span class="tn">${esc(t.note)}</span></div>`).join("")}</div>` : ""}
+    <button class="ghostbtn" id="retry">Test saving again</button>
+  </div>`;
+}
+
+
+/* ---------- bills ---------- */
+function renderBills(){
+  const every = n => n===0?"one-time" : n===1?"monthly" : n===12?"yearly" : `every ${n} months`;
+  if(!S.bills.length) return `<div class="panel"><div class="empty"><b>No bills yet</b>
+    Add one with its next due date and how often it repeats — it'll project forward on its own.</div></div>`;
+  const rows = S.bills.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>`
+    <div class="billrow" data-editbill="${b.id}" style="cursor:pointer">
+      <span class="sw" style="background:${colorFor("n",b.name)}"></span>
+      <span class="meta"><b>${esc(b.name)}</b><span>${every(b.every)} · next ${nextDue(b)} · ${esc(b.cat||"—")}</span></span>
+      <span class="amt">${money2(b.amount)}</span></div>`).join("");
+  return `<div class="panel"><h2>Recurring</h2>
+    <div class="sub">Estimates carry forward. Editing one month's amount updates that month and future projections — past months stay as they were.</div>
+    ${rows}</div>`;
+}
+function nextDue(b){
+  const t = todayStr();
+  const d = occurrences(b, horizonEnd()).find(x=>x>=t) || b.anchor;
+  const p = parse(d); return `${MON[p.getMonth()]} ${p.getDate()}`;
+}
+
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ============================ sheets ============================ */
+const scrim = document.getElementById("scrim"), sheet = document.getElementById("sheet");
+function openSheet(html){
+  sheet.innerHTML = `<div class="grab"></div>` + html;
+  scrim.classList.add("open"); requestAnimationFrame(()=>sheet.classList.add("open"));
+}
+function closeSheet(){ sheet.classList.remove("open"); scrim.classList.remove("open"); }
+scrim.onclick = closeSheet;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2400);
+}
+
+let ADD_TAB = "in";
+function addSheet(){
+  const cats = S.cats.map(c=>`<option>${esc(c)}</option>`).join("");
+  const forms = {
+    in:`<label for="a1">How much</label><input id="a1" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+        <label for="a2">Where it came from</label><input id="a2" placeholder="DoorDash, Uber Eats, tips…">
+        <label for="a3">Note (optional)</label><input id="a3" placeholder="lunch block, 4 orders">
+        <label for="a4">Day earned</label><input id="a4" type="date" value="${todayStr()}">`,
+    out:`<label for="b1">How much</label><input id="b1" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+        <label for="b2">Where you spent it</label><input id="b2" placeholder="Kroger, Aldi, gas…">
+        <div class="two"><div><label for="b3">Category</label><select id="b3">${cats}<option value="__new">+ New category</option></select></div>
+        <div><label for="b4">Day spent</label><input id="b4" type="date" value="${todayStr()}"></div></div>
+        <input id="b3new" placeholder="Name the new category" hidden style="margin-top:8px">`,
+    bill:`<label for="c1">What is it</label><input id="c1" placeholder="Rent, Visa, car insurance…">
+        <label for="c2">Amount due</label><input id="c2" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
+        <div class="two"><div><label for="c3">Next due date</label><input id="c3" type="date" value="${todayStr()}"></div>
+        <div><label for="c4">Repeats</label><select id="c4">
+          <option value="1" selected>Monthly</option><option value="2">Every 2 months</option>
+          <option value="3">Every 3 months</option><option value="6">Every 6 months</option>
+          <option value="12">Yearly</option><option value="0">Doesn't repeat</option></select></div></div>
+        <label for="c5">Category</label><select id="c5">${cats}<option value="__new">+ New category</option></select>
+        <input id="c5new" placeholder="Name the new category" hidden style="margin-top:8px">`
+  };
+  openSheet(`<div class="segs">
+      <button data-tab="in" aria-selected="${ADD_TAB==="in"}">Earned</button>
+      <button data-tab="out" aria-selected="${ADD_TAB==="out"}">Spent</button>
+      <button data-tab="bill" aria-selected="${ADD_TAB==="bill"}">Bill</button></div>
+    ${forms[ADD_TAB]}
+    <button class="save" id="doSave">Add it</button>`);
+
+  sheet.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ ADD_TAB=b.dataset.tab; addSheet(); });
+  sheet.querySelectorAll("select").forEach(sel=>{
+    const box = document.getElementById(sel.id+"new");
+    if(!box) return;
+    sel.onchange = ()=>{
+      const isNew = sel.value === "__new";
+      box.hidden = !isNew;
+      if(isNew) box.focus();
+    };
+  });
+  document.getElementById("doSave").onclick = ()=>{
+    const g = id => document.getElementById(id).value.trim();
+    const seq = Date.now();
+    // "+ New category" reveals a text field; register it the first time it's used.
+    const cat = id => {
+      const sel = document.getElementById(id);
+      if(sel.value !== "__new") return sel.value;
+      const v = g(id+"new");
+      if(!v) return null;
+      if(!S.cats.includes(v)) S.cats.push(v);
+      return v;
+    };
+    if(ADD_TAB==="in"){
+      const amt = parseFloat(g("a1"));
+      if(!(amt>0)) return toast("Enter an amount above zero.");
+      S.earnings.push({ id:"e"+seq, amount:amt, source:g("a2")||"Earnings", note:g("a3"), date:g("a4")||todayStr(), seq });
+    } else if(ADD_TAB==="out"){
+      const amt = parseFloat(g("b1"));
+      if(!(amt>0)) return toast("Enter an amount above zero.");
+      if(!g("b2")) return toast("Name where the money went.");
+      const c = cat("b3");
+      if(c === null) return toast("Name the new category first.");
+      S.spends.push({ id:"s"+seq, amount:amt, name:g("b2"), cat:c, date:g("b4")||todayStr(), seq });
+    } else {
+      const amt = parseFloat(g("c2"));
+      if(!g("c1")) return toast("Give the bill a name.");
+      if(!(amt>0)) return toast("Enter an amount above zero.");
+      const c = cat("c5");
+      if(c === null) return toast("Name the new category first.");
+      S.bills.push({ id:"b"+seq, name:g("c1"), amount:amt, anchor:g("c3")||todayStr(),
+                     every:parseInt(g("c4"),10), cat:c, seq });
+    }
+    save(); lockPast(); closeSheet(); render();
+    toast(ADD_TAB==="in" ? "Added — bars updated." : "Added.");
+  };
+}
+
+function segSheet(key){
+  const o = allObligations().find(x=>x.key===key); if(!o) return;
+  const d = parse(o.date), col = colorFor("n", o.name);
+  const swatches = PALETTE.map(c=>`<button data-hex="${c}" style="background:${c}" aria-pressed="${c===col}"
+      aria-label="Use this color"></button>`).join("");
+  const pct = Math.round((o.filled/o.amount)*100);
+
+  openSheet(`<div class="detailhead"><h3>${esc(o.name)}</h3><span class="n">${money2(o.amount)}</span></div>
+    <div class="detailmeta">${o.kind==="bill"?"Due":"Spent"} ${MON[d.getMonth()]} ${d.getDate()} ·
+      ${esc(o.cat||"no category")} · ${pct}% covered${o.projected?" · projected":""}</div>
+    <label for="ea">Amount</label><input id="ea" type="number" inputmode="decimal" step="0.01" value="${o.amount}">
+    ${o.kind==="bill"?`<div class="hint" style="margin-top:6px">Changing this updates this month and future estimates. Earlier months keep their own amounts.</div>`:""}
+    <label>Color</label><div class="swatches">${swatches}</div>
+    ${o.kind==="bill"?`<div class="toggle"><span><b>Actually paid</b><span>Adds the hatch mark to this segment</span></span>
+      <button class="switch" id="paidSw" aria-pressed="${o.paid}" aria-label="Mark paid"><i></i></button></div>`:""}
+    <button class="save" id="segSave">Save</button>
+    <button class="ghostbtn" id="segDel">${o.kind==="bill"?"Skip this occurrence":"Delete entry"}</button>`);
+
+  sheet.querySelectorAll(".swatches button").forEach(b=>b.onclick=()=>{
+    setColor("n", o.name, b.dataset.hex);
+    sheet.querySelectorAll(".swatches button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+    render();
+  });
+  const sw = document.getElementById("paidSw");
+  if(sw) sw.onclick = ()=>{
+    const now = sw.getAttribute("aria-pressed")!=="true";
+    sw.setAttribute("aria-pressed", now);
+    S.inst[o.key] = Object.assign({ amount:o.amount, paid:false }, S.inst[o.key], { paid:now });
+    save(); render();
+  };
+  document.getElementById("segSave").onclick = ()=>{
+    const v = parseFloat(document.getElementById("ea").value);
+    if(!(v>0)) return toast("Enter an amount above zero.");
+    if(o.kind==="bill"){
+      S.inst[o.key] = Object.assign({ paid:false }, S.inst[o.key], { amount:v });
+      const b = S.bills.find(x=>x.id===o.billId);
+      if(b && o.date >= todayStr().slice(0,7)+"-01") b.amount = v;
+    } else {
+      const s = S.spends.find(x=>x.id===o.key); if(s) s.amount = v;
+    }
+    save(); closeSheet(); render(); toast("Updated.");
+  };
+  document.getElementById("segDel").onclick = ()=>{
+    if(o.kind==="bill") S.inst[o.key] = Object.assign({ amount:o.amount }, S.inst[o.key], { skipped:true });
+    else S.spends = S.spends.filter(x=>x.id!==o.key);
+    save(); closeSheet(); render(); toast(o.kind==="bill" ? "Skipped this one." : "Deleted.");
+  };
+}
+
+function billSheet(id){
+  const b = S.bills.find(x=>x.id===id); if(!b) return;
+  const cats = S.cats.map(c=>`<option ${c===b.cat?"selected":""}>${esc(c)}</option>`).join("");
+  openSheet(`<div class="detailhead"><h3>${esc(b.name)}</h3></div>
+    <div class="detailmeta">Changes apply to upcoming months. Past months keep their recorded amounts.</div>
+    <label for="bn">Name</label><input id="bn" value="${esc(b.name)}">
+    <label for="bam">Estimated amount</label><input id="bam" type="number" inputmode="decimal" step="0.01" value="${b.amount}">
+    <div class="two"><div><label for="ban">Next due</label><input id="ban" type="date" value="${b.anchor}"></div>
+    <div><label for="bev">Repeats</label><select id="bev">
+      ${[[1,"Monthly"],[2,"Every 2 months"],[3,"Every 3 months"],[6,"Every 6 months"],[12,"Yearly"],[0,"Doesn't repeat"]]
+        .map(([v,l])=>`<option value="${v}" ${b.every===v?"selected":""}>${l}</option>`).join("")}
+    </select></div></div>
+    <label for="bc">Category</label><select id="bc">${cats}</select>
+    <button class="save" id="bSave">Save</button>
+    <button class="ghostbtn" id="bDel">Delete this bill and all its future dates</button>`);
+
+  document.getElementById("bSave").onclick = ()=>{
+    const v = parseFloat(document.getElementById("bam").value);
+    if(!(v>0)) return toast("Enter an amount above zero.");
+    b.name = document.getElementById("bn").value.trim() || b.name;
+    b.amount = v;
+    b.anchor = document.getElementById("ban").value || b.anchor;
+    b.every = parseInt(document.getElementById("bev").value,10);
+    b.cat = document.getElementById("bc").value;
+    save(); lockPast(); closeSheet(); render(); toast("Saved.");
+  };
+  document.getElementById("bDel").onclick = ()=>{
+    const past = Object.keys(S.inst).filter(k=>k.startsWith(b.id+"|")).length;
+    openSheet(`<div class="detailhead"><h3>Delete ${esc(b.name)}?</h3></div>
+      <div class="detailmeta">This removes every date for it — ${past} already recorded${
+        past===1?"":""}, plus all the projections ahead. It can't be undone.</div>
+      <button class="ghostbtn" id="bNo" style="margin-top:0">Keep it</button>
+      <button class="save" id="bYes" style="background:#E2685E;color:#fff">Delete it</button>`);
+    document.getElementById("bNo").onclick = ()=>billSheet(id);
+    document.getElementById("bYes").onclick = ()=>{
+      S.bills = S.bills.filter(x=>x.id!==b.id);
+      Object.keys(S.inst).forEach(k=>{ if(k.startsWith(b.id+"|")) delete S.inst[k]; });
+      save(); closeSheet(); render(); toast("Deleted.");
+    };
+  };
+}
+
+/* ============================ events ============================ */
+document.getElementById("fab").onclick = addSheet;
+document.getElementById("prevM").onclick = ()=>{ CURSOR = shiftMonth(CURSOR,-1); render(); };
+document.getElementById("nextM").onclick = ()=>{ CURSOR = shiftMonth(CURSOR, 1); render(); };
+document.getElementById("todayBtn").onclick = ()=>{ CURSOR = todayStr().slice(0,7); render(); };
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{ VIEW=b.dataset.view; render(); });
+
+document.getElementById("main").addEventListener("click", e=>{
+  const jump = e.target.closest("[data-view-jump]");
+  if(jump){ VIEW = jump.dataset.viewJump; return render(); }
+  if(e.target.id === "retry"){
+    (async ()=>{ await probe(); if(STORE.ok) await saveNow();
+      render(); toast(STORE.ok ? "Saving works now." : "Still can't save."); })();
+    return;
+  }
+  if(e.target.id === "copyBtn"){
+    const t = document.getElementById("exp");
+    t.focus(); t.select(); t.setSelectionRange(0, t.value.length);
+    let done = false;
+    try{ navigator.clipboard.writeText(t.value); done = true; }catch(err){}
+    toast(done ? "Copied — paste it to Claude." : "Selected — long-press to copy.");
+    return;
+  }
+  if(e.target.id === "loadBtn"){
+    const raw = document.getElementById("imp").value.trim();
+    if(!raw) return toast("Paste a backup first.");
+    try{
+      const d = JSON.parse(raw);
+      if(!d || !Array.isArray(d.earnings)) throw new Error("wrong shape");
+      S = Object.assign({ earnings:[], spends:[], bills:[], inst:{}, colors:{}, cats:[] }, d);
+      DIRTY = 0;
+      save(); lockPast(); VIEW = "charts"; render(); toast("Loaded.");
+    }catch(err){ toast("That doesn't look like a Flow backup."); }
+    return;
+  }
+  const seg = e.target.closest(".seg"); if(seg) return segSheet(seg.dataset.key);
+  const chip = e.target.closest("[data-filter]"); if(chip){ LEDGER_FILTER = chip.dataset.filter; return render(); }
+  const bk = e.target.closest("[data-billkey]"); if(bk) return segSheet(bk.dataset.billkey);
+  const eb = e.target.closest("[data-editbill]"); if(eb) return billSheet(eb.dataset.editbill);
+  const del = e.target.closest("[data-del]");
+  if(del){
+    const [t,id] = del.dataset.del.split(":");
+    openSheet(`<div class="detailhead"><h3>Remove this entry?</h3></div>
+      <div class="detailmeta">It comes straight back out of the totals.</div>
+      <button class="save" id="yes">Remove it</button>
+      <button class="ghostbtn" id="no">Keep it</button>`);
+    document.getElementById("no").onclick = closeSheet;
+    document.getElementById("yes").onclick = ()=>{
+      if(t==="in") S.earnings = S.earnings.filter(x=>x.id!==id);
+      else S.spends = S.spends.filter(x=>x.id!==id);
+      save(); closeSheet(); render(); toast("Removed.");
+    };
+  }
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeSheet(); });
+
+/* ============================ boot ============================ */
+(async ()=>{
+  document.getElementById("main").innerHTML = `<div class="panel"><div class="empty">Loading your numbers…</div></div>`;
+  await probe();
+  await load();
+  if(!STORE.ok && SEED) S = Object.assign(S, SEED);
+  lockPast();
+  render();
+})();
+</script>
+</body>
+</html>
