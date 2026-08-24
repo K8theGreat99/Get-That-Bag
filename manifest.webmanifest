@@ -1,6 +1,6 @@
 {
   "name": "Get That Bag",
-  "short_name": "That Bag",
+  "short_name": "Get That Bag",
   "description": "Track what you earn against what's due.",
   "start_url": "./",
   "scope": "./",
