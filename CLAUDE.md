@@ -69,6 +69,18 @@ When seeding test data into `localStorage`, write it from a *different* page
 first, then navigate to the app. Seeding on the app's own page and reloading
 loses the write: `pagehide` flushes the in-memory state over it.
 
+## Network limits in the remote session
+
+The egress proxy blocks both `api.github.com` and `k8thegreat99.github.io`, so
+`curl` and WebFetch cannot reach GitHub or the deployed site. A `curl` poll
+against the API returns empty output indefinitely rather than failing, which
+looks like a hang.
+
+Use the `mcp__github__*` tools for anything on GitHub, including checking
+whether a deploy succeeded. The live site cannot be verified from here at all —
+report the expected version name and build SHA and let the user check Settings
+→ About on their device.
+
 ## Session tracking in Linear
 
 Work in this repo is recorded as Linear issues. The rules are in the
