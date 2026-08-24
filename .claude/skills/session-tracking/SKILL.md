@@ -60,8 +60,8 @@ Field notes for this project:
   digits here but not in the title. It is not an Android version code and has
   no meaning to any build system. It increments across root issues and
   sub-issues alike.
-- **`versionName`** is a food codename for the session. Sub-issues reuse the
-  root's name with a number appended (`Arepa 2`, `Arepa 3`).
+- **`versionName`** identifies what code is running. See "Version names"
+  below — it is usually a number bump, not a new name.
 - **`issueId`** is filled in from the create response, which means creating an
   issue takes two calls: `save_issue` to create, then `save_issue` with
   `patch` to write the returned identifier into the block.
@@ -80,6 +80,36 @@ Example: `1. Rebuild artifact draft as a localStorage PWA | 🫓 Arepa`
 `versionCode` is not zero-padded in the title. Long titles are fine; the
 project list view shows up to three lines.
 
+## Version names
+
+The version name identifies what code is running. Its main job is letting the
+user check the name shown in the app against the name in Linear, to confirm a
+change actually reached the device instead of a stale cached copy.
+
+The name does **not** change with each session, branch, or context window.
+
+- **Code changed** — bump the integer. `Arepa 2` becomes `Arepa 3`.
+- **Documentation only, no code change** — bump by 0.1. `Arepa 3` becomes
+  `Arepa 3.1`.
+- **A new feature or a radical overhaul** — move to the next food name,
+  alphabetically. `Arepa` becomes `Brioche`. Adding receipt capture with OCR
+  would qualify. Fixing a bug or restyling a screen would not.
+- **Trivial change**, such as a typo fix — no bump needed.
+
+A new session does not reset or advance the name by itself. If the last session
+ended at `Arepa 3` and today's session fixes a bug, today is `Arepa 4`.
+
+Judgment applies here too. When making many small changes in quick succession,
+or while a project is still being set up, do not bump for every one.
+Incrementing by 0.1 for each successive edit to CLAUDE.md adds noise without
+adding information.
+
+The point of a bump is that the Linear issue list can be scanned later and the
+kind of change each session made is visible from the title alone, without
+opening anything. Bump when that record would be worth having. A session that
+did nothing but documentation work is worth a 0.1. A passing doc tweak inside a
+session of code work is not.
+
 ## At session start
 
 **1. Find the next versionCode.**
@@ -95,8 +125,9 @@ next number up. If the user states a version code, theirs wins.
 Do not look at other Linear projects to infer conventions. Much of that data is
 experimental and does not reflect current rules.
 
-**2. Pick a versionName.** A food, continuing alphabetically from the last
-session in this project (session 1 was Arepa, so session 2 starts with B).
+**2. Determine the versionName.** Read it from the most recent issue in this
+project and apply the rules in "Version names". Usually this means bumping a
+number, not choosing a new name.
 
 **3. Create the root issue.**
 
@@ -128,7 +159,7 @@ When the user returns with a round of feedback, create a sub-issue:
 - Status: **In Progress**
 - Labels: **`session`**
 - Description: its own pseudo-YAML block — same `branch`, next `versionCode`,
-  suffixed `versionName`, its own `issueId` and `commit`
+  the `versionName` for this round, its own `issueId` and `commit`
 
 ## Closing issues
 
