@@ -12,7 +12,7 @@
  * cached copy reports the old SHA rather than silently looking current.
  */
 
-export const VERSION_NAME = "Arepa 2";
+export const VERSION_NAME = "Arepa 3";
 
 const STAMP = "__BUILD__";
 export const BUILD = STAMP.startsWith("__") ? "dev" : STAMP;
