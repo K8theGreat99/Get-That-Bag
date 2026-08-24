@@ -111,7 +111,7 @@ export function renderLedger(ctx) {
     ? group(past, today)
     : `<div class="empty"><b>Nothing logged yet</b><p>What you add shows up here.</p></div>`;
 
-  return `<section class="panel"><div class="chips">${chips}${upcoming ? "" : ""}</div>
+  return `<section class="panel"><div class="chips">${chips}</div>
     ${upcoming}${history}</section>`;
 }
 
@@ -205,7 +205,7 @@ export function renderSettings(ctx) {
       <h2>Appearance</h2>
       <div class="seg-row" role="group" aria-label="Theme">
         ${["system", "dark", "light"].map((t) =>
-          `<button class="seg" data-theme="${t}" aria-pressed="${ctx.theme === t}">${t}</button>`).join("")}
+          `<button class="segbtn" data-theme="${t}" aria-pressed="${ctx.theme === t}">${t}</button>`).join("")}
       </div>
     </section>
 
