@@ -68,3 +68,33 @@ real bugs in this codebase were only visible in a screenshot, not in the DOM.
 When seeding test data into `localStorage`, write it from a *different* page
 first, then navigate to the app. Seeding on the app's own page and reloading
 loses the write: `pagehide` flushes the in-memory state over it.
+
+## Session tracking in Linear
+
+Every Claude Code session is tracked as a Linear issue. The rules live in the
+Linear document **"Session Tracking in Linear"** (team K8theGreat). Read that
+document at the start of a session and follow it exactly.
+
+Do not infer conventions from existing issues in other Linear projects. Much of
+that data is experimental and does not reflect current rules. The document is
+the only source of truth. If the document does not say to do something, don't
+do it — that includes applying labels it doesn't name. The only label on a
+session issue is `session`.
+
+This project's adaptations, because there is no build system:
+
+- **`commit:` replaces `buildNumber:`** in the pseudo-YAML block. Use the short
+  SHA the issue's work ended at. GitHub Pages serves a commit directly, and the
+  deploy workflow stamps that SHA into the service worker cache name, so it
+  identifies the deployed version.
+- **`versionCode` is a plain counter**, per project, not an Android version
+  code. Get That Bag starts at `001`.
+- **One sub-issue per round of feedback that ends in a push**, not one per bug
+  reported. If a round needs more than one push, keep one sub-issue and update
+  its `commit:` to the final SHA.
+- **Closing:** the last commit of the session starts its message with
+  `Fixes K8T-nn, K8T-nn, ...` listing the root issue and every sub-issue.
+  Linear closes them when that commit reaches `main`.
+
+Linear reformats the `---` fenced block into a ```yaml code block on save. The
+field values are unaffected.
