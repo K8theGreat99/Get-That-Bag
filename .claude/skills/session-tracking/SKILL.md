@@ -181,11 +181,17 @@ Linear acts on it once the commit reaches `main`.
 
 Two caveats worth knowing:
 
-- This only fires on a **fast-forward merge**, which preserves commit
-  messages. A squash merge through a GitHub PR rewrites them and the magic
-  word is lost.
+- The commit message has to survive onto `main`. A **fast-forward merge** and
+  a normal **PR merge commit** both preserve it, so either works. A **squash
+  merge** rewrites the branch commits into one and the magic word is lost
+  unless it is repeated in the squash message.
 - Closing is not dependent on git at all. `save_issue(id: "K8T-26", state:
   "Done")` works any time, and is the fix if a merge does not close something.
+
+Merging does not end a session or destroy the branch. Work continues on the
+same branch afterward and is merged again as often as needed. A root issue
+closing at the first merge while its sub-issues stay open is normal and matches
+how the work actually proceeds.
 
 ## Labels
 
