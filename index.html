@@ -52,6 +52,15 @@
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Dialog"></div>
 
+<!-- Stacks above the sheet so a rejected entry keeps everything already typed. -->
+<div class="alertscrim" id="alertScrim" hidden>
+  <div class="alertbox" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertBody">
+    <h3 id="alertTitle"></h3>
+    <p id="alertBody"></p>
+    <button class="btn primary" id="alertOk">Got it</button>
+  </div>
+</div>
+
 <div class="toastbar" id="toast" role="status" aria-live="polite"></div>
 
 <div class="updatebar" id="update" hidden>

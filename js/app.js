@@ -208,6 +208,7 @@ $("prevM").onclick = () => { ui.cursor = shiftMonth(ui.cursor, -1); render(); };
 $("nextM").onclick = () => { ui.cursor = shiftMonth(ui.cursor, 1); render(); };
 $("todayBtn").onclick = () => { ui.cursor = thisMonth(); render(); };
 $("scrim").onclick = sheets.close;
+$("alertScrim").onclick = (e) => { if (e.target.id === "alertScrim") sheets.dismissError(); };
 
 for (const b of document.querySelectorAll("nav.tabs button")) {
   b.onclick = () => go(b.dataset.view);
@@ -243,6 +244,8 @@ $("main").addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
+  // The error dialog stacks over the sheet, so it takes Escape first.
+  if (e.key === "Escape" && sheets.errorIsOpen()) return sheets.dismissError();
   if (e.key === "Escape" && sheets.isOpen()) return sheets.close();
   sheets.trapFocus(e);
 });

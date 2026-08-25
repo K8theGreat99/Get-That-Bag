@@ -37,6 +37,7 @@ export function open(html, label) {
 }
 
 export function close() {
+  dismissError();
   sheet().classList.remove("open");
   scrim().classList.remove("open");
   document.body.classList.remove("locked");
@@ -46,9 +47,48 @@ export function close() {
 
 export const isOpen = () => sheet().classList.contains("open");
 
+/* ------------------------------------------------------------------ */
+/* error dialog                                                        */
+/* ------------------------------------------------------------------ */
+
+const alertScrim = () => document.getElementById("alertScrim");
+let alertReturn = null;
+
+export const errorIsOpen = () => !alertScrim().hidden;
+
+/**
+ * A blocking error stacked on top of whatever sheet is open.
+ *
+ * Deliberately not built on open(): that replaces the sheet's contents, which
+ * would throw away everything already typed into the form being rejected.
+ * `focusId` is the field at fault, focused again once the dialog is dismissed.
+ */
+export function showError(title, body, focusId) {
+  document.getElementById("alertTitle").textContent = title;
+  document.getElementById("alertBody").textContent = body;
+  alertReturn = focusId || null;
+  alertScrim().hidden = false;
+  const ok = document.getElementById("alertOk");
+  ok.onclick = dismissError;
+  ok.focus();
+}
+
+export function dismissError() {
+  if (!errorIsOpen()) return;
+  alertScrim().hidden = true;
+  const back = alertReturn && document.getElementById(alertReturn);
+  alertReturn = null;
+  if (back) back.focus();
+}
+
 /** Keep Tab inside the sheet while it's up. */
 export function trapFocus(e) {
-  if (e.key !== "Tab" || !isOpen()) return;
+  if (e.key !== "Tab") return;
+  if (errorIsOpen()) {
+    e.preventDefault();
+    return document.getElementById("alertOk").focus();
+  }
+  if (!isOpen()) return;
   const f = [...sheet().querySelectorAll("button, input, select, textarea, [tabindex]:not([tabindex='-1'])")]
     .filter((el) => !el.disabled && el.offsetParent !== null);
   if (!f.length) return;
@@ -59,6 +99,25 @@ export function trapFocus(e) {
 
 const val = (id) => (document.getElementById(id)?.value ?? "").trim();
 const numVal = (id) => parseFloat(val(id));
+
+/**
+ * Earnings are a record of money that has already landed, so a date ahead of
+ * today is always a mistake — usually a bill typed into the Earned tab. Left
+ * in, it inflates the earned total while the ledger files it away under
+ * "Coming up", which makes the two disagree for no visible reason.
+ *
+ * Returns true when the entry was rejected, so callers can bail.
+ */
+function rejectFutureEarning(date, fieldId) {
+  if (!date || date <= todayStr()) return false;
+  showError(
+    "That day hasn't happened yet",
+    "Earnings are money you've already been paid, so they can't be dated ahead of today. " +
+    "If this is money you owe, add it on the Bill tab instead.",
+    fieldId,
+  );
+  return true;
+}
 
 /** Category <select> with a "+ New" escape hatch that reveals a text field. */
 function catSelect(id, selected) {
@@ -111,7 +170,7 @@ export function openAdd(tab) {
       <label for="a3">Note <span class="opt">optional</span></label>
       <input id="a3" placeholder="lunch block, 4 orders" autocomplete="off">
       <label for="a4">Day earned</label>
-      <input id="a4" type="date" value="${t}">`,
+      <input id="a4" type="date" value="${t}" max="${t}">`,
     out: `
       <label for="b1">How much</label>
       <input id="b1" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" autocomplete="off">
@@ -160,9 +219,11 @@ export function openAdd(tab) {
     if (addTab === "in") {
       const amt = numVal("a1");
       if (!(amt > 0)) return ctx.toast("Enter an amount above zero.");
+      const date = val("a4") || todayStr();
+      if (rejectFutureEarning(date, "a4")) return;
       ctx.beginChange();
       const source = val("a2") || "Earnings";
-      S.earnings.push({ id: "e" + seq, amount: amt, source, note: val("a3"), date: val("a4") || todayStr(), seq });
+      S.earnings.push({ id: "e" + seq, amount: amt, source, note: val("a3"), date, seq });
       ensureColor("n", source);
       ctx.commit("Added.");
     } else if (addTab === "out") {
@@ -301,7 +362,7 @@ export function openEarning(id) {
     <input id="ee1" type="number" inputmode="decimal" step="0.01" min="0" value="${e.amount}">
     <label for="ee2">Source</label><input id="ee2" value="${esc(e.source || "")}">
     <label for="ee3">Note <span class="opt">optional</span></label><input id="ee3" value="${esc(e.note || "")}">
-    <label for="ee4">Day earned</label><input id="ee4" type="date" value="${e.date}">
+    <label for="ee4">Day earned</label><input id="ee4" type="date" value="${e.date}" max="${todayStr()}">
 
     <button class="btn primary save" id="eSave">Save</button>
     <button class="btn ghost" id="eDel">Delete this entry</button>`, "Edit earnings");
@@ -309,11 +370,13 @@ export function openEarning(id) {
   document.getElementById("eSave").onclick = () => {
     const v = numVal("ee1");
     if (!(v > 0)) return ctx.toast("Enter an amount above zero.");
+    const date = val("ee4") || e.date;
+    if (rejectFutureEarning(date, "ee4")) return;
     ctx.beginChange();
     e.amount = v;
     e.source = val("ee2") || "Earnings";
     e.note = val("ee3");
-    e.date = val("ee4") || e.date;
+    e.date = date;
     ensureColor("n", e.source);
     close();
     ctx.commit("Updated.");
