@@ -1,23 +1,15 @@
 # Get That Bag
 
-A personal earnings-vs-obligations tracker. Log what you earn, log what's due,
+A personal earnings-vs-expenses tracker. Log what you earn, log what's due,
 and watch the weekly bars fill in as the money actually lands.
 
 **Live:** https://k8thegreat99.github.io/Get-That-Bag/
 
-## Where your data lives
+## Local Storage
 
-In your browser. That's the whole story — there is no account, no server, and
-no network request that carries a single number out of the device you're on.
+Your data lives in your browser, on your device. You control it. 
 
-That has a consequence worth being clear about: **the only copy that survives
-clearing your browsing history, or switching phones, is a backup file.**
-Settings → Backup downloads one. The app nags you if it's been more than three
-weeks.
-
-It also means the public URL is harmless. Someone who finds this page gets the
-app with an empty dataset of their own. There is nothing of yours for them to
-read, edit, or delete, because your entries never left your device.
+One-click import and export makes it move-able, though not sync-able. The app remindss you to backup data if it's been more than three weeks.
 
 ## Install it
 
